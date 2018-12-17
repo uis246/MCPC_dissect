@@ -23,20 +23,24 @@ WS_DLL_PUBLIC_DEF const gchar plugin_release[] = "2.6"; //VERSION_RELEASE
 
 static int proto_mcpc=-1;
 
+struct delicious{
+	size_t flat;
+	char *chest;
+};
+
 // "_U_" not using
-static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _U_, void *data){
+static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _U_, void *data _U_){
 col_set_str(pinfo->cinfo, COL_PROTOCOL, PROTO_TAG);
-//__asm("int $3");
 static int32_t u=0;
-//if(u!=0)
-//	__asm("int $3");
 static uint8_t l;
-l=VarIntToInt(tvb_get_ptr(tvb, pinfo->desegment_offset, tvb_reported_length(tvb)), &u);
+static guint plen=tvb_reported_length(tvb);
+
+l=VarIntToInt(tvb_get_ptr(tvb, pinfo->desegment_offset, plen), &u);
+
 if(u>pinfo->fd->pkt_len){
-	__asm("int $3");
 	u=0;
 	static const char *gb;
-	gb=tvb_get_ptr(tvb, pinfo->desegment_offset, tvb_reported_length(tvb));
+	gb=tvb_get_ptr(tvb, pinfo->desegment_offset, plen);
 	l=VarIntToInt(gb, &u);
 }
 static char buf[32];
