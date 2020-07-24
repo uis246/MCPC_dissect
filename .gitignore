@@ -1,4 +1,4 @@
+build/
 CMakeLists.txt.user
 .directory
 *.autosave
-build
