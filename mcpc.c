@@ -79,23 +79,34 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _
 	else if(packet_length<protocol_length)
 		return packet_length-protocol_length;
 
+	static char buf[32];
+
 	if(protocol_length<=pinfo->fd->pkt_len){
 		varlen=VarIntToUint(dt+readed, &varint, packet_length-readed);
-		if(varlen>0)
+		if(varlen>0&&varlen>5)
 			readed+=varlen;
-		else
-			return -1;
-		if(varlen>5)
-			return 0;
+		else{
+			if(pinfo->destport==25565)
+				sprintf(buf, "Result: [C->S] %u bytes, failed to parse PacketID", packet_length);
+			else
+				sprintf(buf, "Result: [S->C] %u bytes, failed to parse PacketID", packet_length);
+
+			col_set_str(pinfo->cinfo, COL_INFO, "");
+
+			if(varlen>5)
+				return 0;
+			else
+				return -1;
+		}
 	}
 
-	static char buf[32];
+
 //	if(u>10000)
 //		__asm("int $3");
 	if(pinfo->destport==25565)
-		sprintf(buf, "Result: [C->S] %u bytes, 0x%X", packet_length, varint);
+		sprintf(buf, "Result: [C->S] %u bytes, 0x%.2X", packet_length, varint);
 	else
-		sprintf(buf, "Result: [S->C] %u bytes, 0x%X"/*Length: %u*/, packet_length, varint);
+		sprintf(buf, "Result: [S->C] %u bytes, 0x%.2X", packet_length, varint);
 	col_set_str(pinfo->cinfo, COL_INFO, buf);
 
 	return tvb_captured_length(tvb);
@@ -106,51 +117,6 @@ static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
 	return tvb_captured_length(tvb);
 }
 
-/*static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _U_, void *data _U_){
-	col_set_str(pinfo->cinfo, COL_PROTOCOL, PROTO_TAG);//Set MCPC protocol tag
-
-	uint32_t protocol_length, varint;
-	guint8 packet_length, readed;
-	int8_t varlen;
-
-	packet_length=tvb_reported_length(tvb);//To read
-	if(packet_length==0)
-		return tvb_captured_length(tvb);
-
-	const guint8 *dt;
-	dt=tvb_get_ptr(tvb, pinfo->desegment_offset, packet_length);
-
-	readed=VarIntToUint(dt, &protocol_length, packet_length);
-	if(readed<0)
-		return -1;
-	else if(packet_length<protocol_length)
-		return packet_length-protocol_length;
-
-	if(protocol_length<=pinfo->fd->pkt_len){
-		varlen=VarIntToUint(dt, &varint, packet_length-readed);
-		if(varlen>0)
-			readed+=varlen;
-		else
-			return -1;
-		if(varlen>5)
-			return 0;
-	}
-
-	static char buf[32];
-	if(varlen>5)
-		col_set_str(pinfo->cinfo, COL_INFO, "varint parse error");
-	else{
-//	if(u>10000)
-//		__asm("int $3");
-		if(pinfo->destport==25565)
-			sprintf(buf, "[C->S] Length: %u", packet_length);
-		else
-			sprintf(buf, "[S->C] Length: %u", packet_length);
-		col_set_str(pinfo->cinfo, COL_INFO, buf);
-	}
-	return tvb_captured_length(tvb);
-}*/
-
 
 //Protocol register functions
 static void proto_reg_handoff_mcpc(void)
@@ -159,7 +125,6 @@ static void proto_reg_handoff_mcpc(void)
 	dissector_add_uint("tcp.port", PROTO_PORT, mcpc_handle);
 }
 static void proto_register_mcpc(){
-	/* name */ /* short name */ /* abbrev */
 	proto_mcpc = proto_register_protocol ("Minecraft PC version",
 											   "Minecraft",
 											   "mcpc");
@@ -168,7 +133,6 @@ static void proto_register_mcpc(){
 
 //Plugin register function
 #ifndef ENABLE_STATIC
-//#if 0
 WS_DLL_PUBLIC void plugin_register(){
 	/* register the new protocol, protocol fields, and subtrees */
 	if (proto_mcpc == -1) { /* execute protocol initialization only once */
