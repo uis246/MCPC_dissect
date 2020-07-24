@@ -28,23 +28,23 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 static int proto_mcpc=-1;
 static dissector_handle_t mcpc_handle;
 
-int8_t VarIntToUint(const guint8 *varint, uint32_t *result, uint_fast8_t maxlen){
+int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	int8_t i=0;
 	*result=0;
 	do{
 		if(i>5)
 			break;
-		*result |= (varint[i]&0x7F) << (i*7);
-		if(i>maxlen)
+		if((guint)i>maxlen)
 			return -1;
+		*result |= (varint[i]&0x7F) << (i*7);
 	}while((varint[i++]&0x80) != 0);
 	return i;
 }
 
 static guint getlen(packet_info *pinfo, tvbuff_t *tvb, int offset _U_, void *data _U_){
-	int8_t ret;
+	int ret;
 	uint32_t len;
-	guint8 packet_length;
+	guint packet_length;
 	packet_length=tvb_reported_length(tvb);//To read
 	if(packet_length==0)
 		return 0;
@@ -65,7 +65,7 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _
 	col_set_str(pinfo->cinfo, COL_PROTOCOL, PROTO_TAG);//Set MCPC protocol tag
 
 	uint32_t protocol_length, varint;
-	guint8 packet_length, readed;
+	guint8 packet_length, packet_length_length, readed;
 	int8_t varlen;
 	const guint8 *dt;
 
@@ -73,43 +73,38 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree _
 
 	dt=tvb_get_ptr(tvb, pinfo->desegment_offset, packet_length);
 
-	readed=VarIntToUint(dt, &protocol_length, packet_length);
-	if(readed<0)
+	packet_length_length=readed=VarIntToUint(dt, &protocol_length, packet_length);
+	if(readed<0){
 		return -1;
-	else if(packet_length<protocol_length)
-		return packet_length-protocol_length;
+	}
 
 	static char buf[32];
 
-	if(protocol_length<=pinfo->fd->pkt_len){
-		varlen=VarIntToUint(dt+readed, &varint, packet_length-readed);
-		if(varlen>0&&varlen>5)
-			readed+=varlen;
-		else{
-			if(pinfo->destport==25565)
-				sprintf(buf, "Result: [C->S] %u bytes, failed to parse PacketID", packet_length);
-			else
-				sprintf(buf, "Result: [S->C] %u bytes, failed to parse PacketID", packet_length);
+	varlen=VarIntToUint(dt+readed, &varint, packet_length-readed);
+	if(varlen>0&&varlen<5){
+//		readed+=varlen;
+	}else{
+		if(pinfo->destport==25565)
+			sprintf(buf, "Result: [C->S] %u bytes, failed to parse PacketID", protocol_length+packet_length_length);
+		else
+			sprintf(buf, "Result: [S->C] %u bytes, failed to parse PacketID", protocol_length+packet_length_length);
 
-			col_set_str(pinfo->cinfo, COL_INFO, "");
+		col_set_str(pinfo->cinfo, COL_INFO, buf);
 
-			if(varlen>5)
-				return 0;
-			else
-				return -1;
-		}
+		if(varlen>5)
+			return 0;
+		else
+			return -1;
 	}
 
-
-//	if(u>10000)
-//		__asm("int $3");
 	if(pinfo->destport==25565)
-		sprintf(buf, "Result: [C->S] %u bytes, 0x%.2X", packet_length, varint);
+		sprintf(buf, "Result: [C->S] %u bytes, 0x%.2X", protocol_length+packet_length_length, varint);
 	else
-		sprintf(buf, "Result: [S->C] %u bytes, 0x%.2X", packet_length, varint);
+		sprintf(buf, "Result: [S->C] %u bytes, 0x%.2X", protocol_length+packet_length_length, varint);
 	col_set_str(pinfo->cinfo, COL_INFO, buf);
 
 	return tvb_captured_length(tvb);
+//	return protocol_length;
 }
 static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data){
 	tcp_dissect_pdus(tvb, pinfo, tree, TRUE, 0,
