@@ -10,6 +10,27 @@ extern int
 	hf_protocol_packetid_cb_slp;
 
 
+void tree_server_play(proto_tree *packet_tree, tvbuff_t *tvb, const void *data, guint length){
+	//	guint readed;
+		uint32_t varint;
+		int8_t varlen;
+		varlen=VarIntToUint(data, &varint, length);//PacketID
+		if(varlen>0){
+	//		readed=varlen;
+			proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb, tvb, 0, varlen, varint);
+		}
+}
+void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, const void *data, guint length){
+	//	guint readed;
+		uint32_t varint;
+		int8_t varlen;
+		varlen=VarIntToUint(data, &varint, length);//PacketID
+		if(varlen>0){
+	//		readed=varlen;
+			proto_tree_add_uint(packet_tree, hf_protocol_packetid_cb, tvb, 0, varlen, varint);
+		}
+}
+
 void tree_server_login(proto_tree *packet_tree, tvbuff_t *tvb, const void *data, guint length){
 //	guint readed;
 	uint32_t varint;
@@ -114,7 +135,10 @@ int parse_client_login(const void *data, guint length, mcpc_protocol_context *ct
 					ctx->compressTrxld=(int32_t)varint;
 				else
 					return -1;
+				break;
 			case 0x02:
+				ctx->state=STATE_PLAY;
+				break;
 			case 0x01:
 				break;
 			default:

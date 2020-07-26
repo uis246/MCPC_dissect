@@ -102,7 +102,8 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 			if(pinfo->destport==25565){
 				switch (ctx->state) {
 					case STATE_PLAY:
-						break;;
+						tree_server_play(packet_tree, tvb, dat, length);
+						break;
 					case STATE_LOGIN:
 						tree_server_login(packet_tree, tvb, dat, length);
 						break;
@@ -113,7 +114,8 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 			}else{
 				switch (ctx->state) {
 					case STATE_PLAY:
-						break;;
+						tree_client_play(packet_tree, tvb, dat, length);
+						break;
 					case STATE_LOGIN:
 						tree_client_login(packet_tree, tvb, dat, length);
 						break;
@@ -127,7 +129,8 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 				case STATE_PLAY:
 					return;
 				case STATE_LOGIN:
-//					if(packet_tree)
+					if(packet_tree)
+						tree_server_login(packet_tree, tvb, dat, length);
 //						proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb_login, tvb, base_offset, varlen, varint);
 					return;
 				case STATE_HANDSHAKE:
@@ -138,7 +141,16 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 					return;
 				}
 		}else{
-			return;
+			switch (ctx->state) {
+				case STATE_PLAY:
+					return;
+				case STATE_LOGIN:
+					if(parse_client_login(dat, length, ctx)==-1)
+						break;
+					if(packet_tree)
+						tree_client_login(packet_tree, tvb, dat, length);
+					return;
+			}
 		}
 	}
 		col_add_str(pinfo->cinfo, COL_INFO, "[INVALID]");
@@ -154,11 +166,13 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 	conversation_t *conv;
 	mcpc_protocol_context *ctx;
 	proto_item *packet_item;
+	proto_tree *mcpc_tree;
 	const guint8 *dt;
 	guint packet_length;
 	gint readed;
-	uint32_t protocol_length;
+	uint32_t protocol_length, varint;
 	guint8 packet_length_length;
+	gint8 varlen;
 	col_set_str(pinfo->cinfo, COL_PROTOCOL, PROTO_TAG);//Set MCPC protocol tag
 
 	conv=find_or_create_conversation(pinfo);
@@ -177,9 +191,6 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 	dt=tvb_get_ptr(tvb, pinfo->desegment_offset, packet_length);
 
 	packet_length_length=readed=VarIntToUint(dt, &protocol_length, packet_length);
-	if(readed<0){
-		return -1;
-	}
 
 	if(pinfo->destport==25565)
 		col_add_fstr(pinfo->cinfo, COL_INFO, "Result: [C->S] %u bytes", protocol_length+packet_length_length);
@@ -188,7 +199,6 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 
 	if(tree){
 		proto_item *ti;
-		proto_tree *mcpc_tree;
 
 		ti = proto_tree_add_item(tree, proto_mcpc, tvb, 0, -1, FALSE);
 		mcpc_tree = proto_item_add_subtree(ti, ett_mcpc);
@@ -198,16 +208,38 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 
 	tvbuff_t *new_tvb;
 	if(ctx->compressTrxld<0){
+		new_tvb=tvb_new_subset_remaining(tvb, packet_length_length);
 		if(tree){
-			packet_item=proto_tree_add_item(tree, proto_mcpc, tvb, packet_length_length, -1, FALSE);
+			packet_item=proto_tree_add_item(tree, proto_mcpc, new_tvb, 0, -1, FALSE);
 			proto_item_set_text(packet_item, "MC:JE packet");
 		}else
 			packet_item=NULL;
-		new_tvb=tvb_new_subset_remaining(tvb, packet_length_length);
 		subdissect_mcpc_proto(protocol_length, new_tvb, pinfo, packet_item, ctx, pinfo->fd->visited);
 	}else{
-		col_set_str(pinfo->cinfo, COL_INFO, "[COMPRESSED]");
-		//Decompress
+		varlen=VarIntToUint(dt+packet_length_length, &varint, packet_length-readed);
+		if(varlen<0)
+			return 0;
+
+		if(tree)
+			proto_tree_add_uint(mcpc_tree, hf_packet_data_length, tvb, readed, varlen, varint);
+		readed+=varlen;
+
+		if((int32_t)varint>0){
+			col_set_str(pinfo->cinfo, COL_INFO, "[COMPRESSED]");
+			//Decompress
+			new_tvb=tvb_uncompress(tvb, readed, packet_length-readed);
+			if(new_tvb==NULL)
+				return 0;
+			add_new_data_source(pinfo, new_tvb, "Uncompressed packet");
+		}else{
+			new_tvb=tvb_new_subset_remaining(tvb, readed);
+		}
+		if(tree){
+			packet_item=proto_tree_add_item(tree, proto_mcpc, new_tvb, 0, -1, FALSE);
+			proto_item_set_text(packet_item, "MC:JE packet");
+		}else
+			packet_item=NULL;
+		subdissect_mcpc_proto(tvb_reported_length(new_tvb), new_tvb, pinfo, packet_item, ctx, pinfo->fd->visited);
 	}
 
 	return tvb_captured_length(tvb);
