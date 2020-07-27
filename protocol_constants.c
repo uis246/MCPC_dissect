@@ -2,6 +2,15 @@
 #include "protocol_constants.h"
 
 const value_string
+difficulty_levels[]={//State types
+	{0x00, "Peaceful"},
+	{0x01, "Easy"},
+	{0x02, "Normal"},
+	{0x03, "Hard"},
+	{0, NULL}
+};
+
+const value_string
 states[]={//State types
 	{0x00, "Handshake"},
 	{0x01, "Status"},

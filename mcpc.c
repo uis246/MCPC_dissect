@@ -18,7 +18,7 @@
 
 #ifndef ENABLE_STATIC
 WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.2-pre-b1";
-WS_DLL_PUBLIC_DEF const gchar plugin_release[] = "3.2"; //VERSION_RELEASE
+WS_DLL_PUBLIC_DEF const gchar plugin_release[] = VERSION;//e.g. "3.2"
 WS_DLL_PUBLIC_DEF const int plugin_want_major = WIRESHARK_VERSION_MAJOR;
 WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 #endif
@@ -58,7 +58,9 @@ int
 	hf_compression_trxld=-1,
 	hf_protocol_version=-1,
 	hf_hs_next_state=-1,
-	hf_server_address=-1;
+	hf_server_address=-1,
+	hf_entity_id=-1,
+	hf_difficulty=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	int8_t i=0;
@@ -424,6 +426,22 @@ static void proto_register_mcpc(){
 				"Server address", "mcpc.address",
 				FT_STRING, STR_ASCII,
 				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_entity_id,
+			{
+				"Entity ID", "mcpc.entity.id",
+				FT_INT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_difficulty,
+			{
+				"Difficulty", "mcpc.difficulty",
+				FT_UINT8, BASE_DEC,
+				VALS(difficulty_levels), 0x0,
 				NULL, HFILL
 			}
 		}
