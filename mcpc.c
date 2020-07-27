@@ -28,19 +28,21 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 #define PROTO_TAG_PARTIAL "MCPC partial"
 
 #include "protocol.h"
-
+#include "protocol_constants.h"
 
 
 
 static int
-	proto_mcpc=-1,
 	ett_mcpc=-1,
 	ett_proto=-1;
+int
+	ett_strlen=-1;
 static dissector_handle_t mcpc_handle, conv_handle, ignore_handle;
 
 static int
 	hf_packet_length=-1,
 	hf_packet_data_length=-1;
+int proto_mcpc=-1;
 int
 	hf_protocol_packetid_sb=-1,
 	hf_protocol_packetid_cb=-1,
@@ -49,6 +51,14 @@ int
 	hf_protocol_packetid_cb_login=-1,
 	hf_protocol_packetid_sb_slp=-1,
 	hf_protocol_packetid_cb_slp=-1;
+int
+	hf_string_length=-1,
+	hf_player_name=-1,
+	hf_uuid=-1,
+	hf_compression_trxld=-1,
+	hf_protocol_version=-1,
+	hf_hs_next_state=-1,
+	hf_server_address=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	int8_t i=0;
@@ -102,22 +112,28 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 			if(pinfo->destport==25565){
 				switch (ctx->state) {
 					case STATE_PLAY:
-						tree_server_play(packet_tree, tvb, dat, length);
+						tree_server_play(packet_tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_LOGIN:
-						tree_server_login(packet_tree, tvb, dat, length);
+						tree_server_login(packet_tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_HANDSHAKE:
-						tree_server_handshake(packet_tree, tvb, dat, length);
+						tree_server_handshake(packet_tree, tvb, pinfo, dat, length);
+						break;
+					case STATE_SLP:
+						tree_server_slp(packet_tree, tvb, pinfo, dat, length);
 						break;
 				}
 			}else{
 				switch (ctx->state) {
 					case STATE_PLAY:
-						tree_client_play(packet_tree, tvb, dat, length);
+						tree_client_play(packet_tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_LOGIN:
-						tree_client_login(packet_tree, tvb, dat, length);
+						tree_client_login(packet_tree, tvb, pinfo, dat, length);
+						break;
+					case STATE_SLP:
+						tree_client_slp(packet_tree, tvb, pinfo, dat, length);
 						break;
 				}
 			}
@@ -130,14 +146,14 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 					return;
 				case STATE_LOGIN:
 					if(packet_tree)
-						tree_server_login(packet_tree, tvb, dat, length);
+						tree_server_login(packet_tree, tvb, pinfo, dat, length);
 //						proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb_login, tvb, base_offset, varlen, varint);
 					return;
 				case STATE_HANDSHAKE:
 					if(parse_server_handshake(dat, length, ctx)==-1)
 						break;
 					if(packet_tree)
-						tree_server_handshake(packet_tree, tvb, dat, length);
+						tree_server_handshake(packet_tree, tvb, pinfo, dat, length);
 					return;
 				}
 		}else{
@@ -148,7 +164,7 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 					if(parse_client_login(dat, length, ctx)==-1)
 						break;
 					if(packet_tree)
-						tree_client_login(packet_tree, tvb, dat, length);
+						tree_client_login(packet_tree, tvb, pinfo, dat, length);
 					return;
 			}
 		}
@@ -226,14 +242,14 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 
 		if((int32_t)varint>0){
 			col_set_str(pinfo->cinfo, COL_INFO, "[COMPRESSED]");
-			//Decompress
-			new_tvb=tvb_uncompress(tvb, readed, packet_length-readed);
+			new_tvb=tvb_uncompress(tvb, readed, packet_length-readed);//Decompress
 			if(new_tvb==NULL)
 				return 0;
 			add_new_data_source(pinfo, new_tvb, "Uncompressed packet");
 		}else{
 			new_tvb=tvb_new_subset_remaining(tvb, readed);
 		}
+
 		if(tree){
 			packet_item=proto_tree_add_item(tree, proto_mcpc, new_tvb, 0, -1, FALSE);
 			proto_item_set_text(packet_item, "MC:JE packet");
@@ -281,7 +297,7 @@ static void proto_reg_handoff_mcpc(void){//Register dissector
 	dissector_add_uint("tcp.port", PROTO_PORT, mcpc_handle);
 }
 static void proto_register_mcpc(){
-	static gint *ett[] = { &ett_mcpc, &ett_proto };
+	static gint *ett[] = { &ett_mcpc, &ett_proto, &ett_strlen };
 	static hf_register_info hf[] = {
 		{ &hf_packet_length,
 			{
@@ -301,7 +317,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_sb,
 			{
-				"Packet ID", "mcpc.protocol.packetid.serverbound",
+				"Packet ID", "mcpc.packetid.serverbound",
 				FT_UINT8, BASE_DEC,
 				VALS(sbpackettypes), 0x0,
 				NULL, HFILL
@@ -309,7 +325,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_cb,
 			{
-				"Packet ID", "mcpc.protocol.packetid.clientbound",
+				"Packet ID", "mcpc.packetid.clientbound",
 				FT_UINT8, BASE_DEC,
 				VALS(cbpackettypes), 0x0,
 				NULL, HFILL
@@ -317,7 +333,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_sb_hs,
 			{
-				"Packet ID(handshake)", "mcpc.protocol.packetid.serverbound.handshake",
+				"Packet ID(handshake)", "mcpc.packetid.serverbound.handshake",
 				FT_UINT8, BASE_DEC,
 				VALS(sbpackettypes_handshake), 0x0,
 				NULL, HFILL
@@ -325,7 +341,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_sb_login,
 			{
-				"Packet ID(login)", "mcpc.protocol.packetid.serverbound.login",
+				"Packet ID(login)", "mcpc.packetid.serverbound.login",
 				FT_UINT8, BASE_DEC,
 				VALS(sbpackettypes_login), 0x0,
 				NULL, HFILL
@@ -333,7 +349,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_cb_login,
 			{
-				"Packet ID(login)", "mcpc.protocol.packetid.clientbound.login",
+				"Packet ID(login)", "mcpc.packetid.clientbound.login",
 				FT_UINT8, BASE_DEC,
 				VALS(cbpackettypes_login), 0x0,
 				NULL, HFILL
@@ -341,7 +357,7 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_sb_slp,
 			{
-				"Packet ID(SLP)", "mcpc.protocol.packetid.serverbound.status",
+				"Packet ID(SLP)", "mcpc.packetid.serverbound.status",
 				FT_UINT8, BASE_DEC,
 				VALS(sbpackettypes_slp), 0x0,
 				NULL, HFILL
@@ -349,9 +365,65 @@ static void proto_register_mcpc(){
 		},
 		{ &hf_protocol_packetid_cb_slp,
 			{
-				"Packet ID(SLP)", "mcpc.protocol.packetid.clientbound.status",
+				"Packet ID(SLP)", "mcpc.packetid.clientbound.status",
 				FT_UINT8, BASE_DEC,
 				VALS(cbpackettypes_slp), 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_string_length,
+			{
+				"String length", "mcpc.string.length",
+				FT_UINT8, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_uuid,
+			{
+				"UUID", "mcpc.player.uuid",
+				FT_STRING, STR_ASCII,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_player_name,
+			{
+				"Player name", "mcpc.player.name",
+				FT_STRING, STR_ASCII,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_compression_trxld,
+			{
+				"Compression treshold", "mcpc.trxld",
+				FT_INT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_protocol_version,
+			{
+				"Protocol version", "mcpc.protocol.version",
+				FT_UINT16, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_hs_next_state,
+			{
+				"Next state", "mcpc.handshake.nextstate",
+				FT_UINT16, BASE_DEC,
+				VALS(states), 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_server_address,
+			{
+				"Server address", "mcpc.address",
+				FT_STRING, STR_ASCII,
+				NULL, 0x0,
 				NULL, HFILL
 			}
 		}

@@ -1,21 +1,30 @@
 #include "protocol.h"
+#include "protocol_constants.h"
 
 const value_string
-sbpackettypes_handshake[]={//Serverbound handshake packet types
-	{0x00, "Login"},
+states[]={//State types
+	{0x00, "Handshake"},
+	{0x01, "Status"},
+	{0x02, "Login"},
 	{0, NULL}
 };
 
 const value_string
-cbpackettypes_login[]={//Serverbound login packet types
+sbpackettypes_handshake[]={//Serverbound handshake packet types
+	{PID_SB_HS_LOGIN, "Login"},
+	{0, NULL}
+};
+
+const value_string
+cbpackettypes_login[]={//Clientbound login packet types
 	{0x00, "Disconnect"},
 	{0x01, "Encryption Request"},
-	{0x02, "Login Success"},
-	{0x03, "Set Compression"},
+	{PID_CB_LOGIN_SUCCESS, "Login Success"},
+	{PID_CB_LOGIN_SET_COMPRESSION, "Set Compression"},
 	{0, NULL}
 },
-sbpackettypes_login[]={//Clientbound login packet types
-	{0x00, "Login Start"},
+sbpackettypes_login[]={//Serverbound login packet types
+	{PID_SB_LOGIN_START, "Login Start"},
 	{0x01, "Encryption Response"},
 	{0, NULL}
 };
