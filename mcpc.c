@@ -214,10 +214,7 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 
 	protocol_length_length=readed=VarIntToUint(dt, &protocol_length, packet_length);
 
-	if(pinfo->destport==25565)
-		col_add_fstr(pinfo->cinfo, COL_INFO, "Result: [C->S] %u bytes", protocol_length+protocol_length_length);
-	else
-		col_add_fstr(pinfo->cinfo, COL_INFO, "Result: [S->C] %u bytes", protocol_length+protocol_length_length);
+	col_append_fstr(pinfo->cinfo, COL_INFO, " %u bytes", protocol_length+protocol_length_length);
 
 	if(tree){
 		proto_item *ti;
@@ -248,7 +245,6 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 		readed+=varlen;
 
 		if((int32_t)varint>0){
-			col_set_str(pinfo->cinfo, COL_INFO, "[COMPRESSED]");
 			new_tvb=tvb_uncompress(tvb, readed, packet_length-readed);//Decompress
 			if(new_tvb==NULL)
 				return 0;
@@ -270,6 +266,11 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 //	return protocol_length;
 }
 static int conv_dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data){
+	if(pinfo->destport==25565)
+		col_set_str(pinfo->cinfo, COL_INFO, "[C->S]");
+	else
+		col_set_str(pinfo->cinfo, COL_INFO, "[S->C]");
+
 	pinfo->fd->subnum=0;
 	tcp_dissect_pdus(tvb, pinfo, tree, TRUE, 0,
 					 getlen, subdissect_mcpc, data);
@@ -340,7 +341,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_sb,
 			{
 				"Packet ID", "mcpc.packetid.serverbound",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(sbpackettypes), 0x0,
 				NULL, HFILL
 			}
@@ -348,7 +349,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_cb,
 			{
 				"Packet ID", "mcpc.packetid.clientbound",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(cbpackettypes), 0x0,
 				NULL, HFILL
 			}
@@ -356,7 +357,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_sb_hs,
 			{
 				"Packet ID(handshake)", "mcpc.packetid.serverbound.handshake",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(sbpackettypes_handshake), 0x0,
 				NULL, HFILL
 			}
@@ -364,7 +365,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_sb_login,
 			{
 				"Packet ID(login)", "mcpc.packetid.serverbound.login",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(sbpackettypes_login), 0x0,
 				NULL, HFILL
 			}
@@ -372,7 +373,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_cb_login,
 			{
 				"Packet ID(login)", "mcpc.packetid.clientbound.login",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(cbpackettypes_login), 0x0,
 				NULL, HFILL
 			}
@@ -380,7 +381,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_sb_slp,
 			{
 				"Packet ID(SLP)", "mcpc.packetid.serverbound.status",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(sbpackettypes_slp), 0x0,
 				NULL, HFILL
 			}
@@ -388,7 +389,7 @@ static void proto_register_mcpc(){
 		{ &hf_protocol_packetid_cb_slp,
 			{
 				"Packet ID(SLP)", "mcpc.packetid.clientbound.status",
-				FT_UINT8, BASE_DEC,
+				FT_UINT8, BASE_HEX,
 				VALS(cbpackettypes_slp), 0x0,
 				NULL, HFILL
 			}
