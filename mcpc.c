@@ -17,7 +17,7 @@
 #include <epan/wmem/wmem.h>
 
 #ifndef ENABLE_STATIC
-WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.2-pre-b1";
+WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.3";
 WS_DLL_PUBLIC_DEF const gchar plugin_release[] = VERSION;//e.g. "3.2"
 WS_DLL_PUBLIC_DEF const int plugin_want_major = WIRESHARK_VERSION_MAJOR;
 WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
@@ -101,42 +101,37 @@ static guint getlen(packet_info *pinfo, tvbuff_t *tvb, int offset, void *data _U
 		return len+ret;
 }
 
-static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinfo, proto_item *packet_item, mcpc_protocol_context *ctx, gboolean visited){
-	proto_tree *packet_tree;
+static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, mcpc_protocol_context *ctx, gboolean visited){
 	const guint8 *dat;
 	dat=tvb_get_ptr(tvb, pinfo->desegment_offset, length);
-	if(packet_item)
-		packet_tree=proto_item_add_subtree(packet_item, ett_proto);
-	else
-		packet_tree=NULL;
 
 	if(visited){
-		if(packet_tree){
+		if(tree){
 			if(pinfo->destport==25565){
 				switch (ctx->state) {
 					case STATE_PLAY:
-						tree_server_play(packet_tree, tvb, pinfo, dat, length);
+						tree_server_play(tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_LOGIN:
-						tree_server_login(packet_tree, tvb, pinfo, dat, length);
+						tree_server_login(tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_HANDSHAKE:
-						tree_server_handshake(packet_tree, tvb, pinfo, dat, length);
+						tree_server_handshake(tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_SLP:
-						tree_server_slp(packet_tree, tvb, pinfo, dat, length);
+						tree_server_slp(tree, tvb, pinfo, dat, length);
 						break;
 				}
 			}else{
 				switch (ctx->state) {
 					case STATE_PLAY:
-						tree_client_play(packet_tree, tvb, pinfo, dat, length);
+						tree_client_play(tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_LOGIN:
-						tree_client_login(packet_tree, tvb, pinfo, dat, length);
+						tree_client_login(tree, tvb, pinfo, dat, length);
 						break;
 					case STATE_SLP:
-						tree_client_slp(packet_tree, tvb, pinfo, dat, length);
+						tree_client_slp(tree, tvb, pinfo, dat, length);
 						break;
 				}
 			}
@@ -148,15 +143,15 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 				case STATE_PLAY:
 					return;
 				case STATE_LOGIN:
-					if(packet_tree)
-						tree_server_login(packet_tree, tvb, pinfo, dat, length);
-//						proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb_login, tvb, base_offset, varlen, varint);
+					if(tree)
+						tree_server_login(tree, tvb, pinfo, dat, length);
+//						proto_tree_add_uint(packet_item, hf_protocol_packetid_sb_login, tvb, base_offset, varlen, varint);
 					return;
 				case STATE_HANDSHAKE:
 					if(parse_server_handshake(dat, length, ctx)==-1)
 						break;
-					if(packet_tree)
-						tree_server_handshake(packet_tree, tvb, pinfo, dat, length);
+					if(tree)
+						tree_server_handshake(tree, tvb, pinfo, dat, length);
 					return;
 				case STATE_SLP:
 					col_add_str(pinfo->cinfo, COL_INFO, "[SLP]");
@@ -169,8 +164,8 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 				case STATE_LOGIN:
 					if(parse_client_login(dat, length, ctx)==-1)
 						break;
-					if(packet_tree)
-						tree_client_login(packet_tree, tvb, pinfo, dat, length);
+					if(tree)
+						tree_client_login(tree, tvb, pinfo, dat, length);
 					return;
 				case STATE_SLP:
 					col_add_str(pinfo->cinfo, COL_INFO, "[SLP]");
@@ -190,7 +185,7 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_){
 	mcpc_protocol_context *ctx;
 	proto_item *packet_item;
-	proto_tree *mcpc_tree;
+	proto_tree *mcpc_tree, *sub_mcpc_tree;
 	const guint8 *dt;
 	guint packet_length;
 	gint readed;
@@ -239,9 +234,10 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 		if(tree){
 			packet_item=proto_tree_add_item(mcpc_tree, proto_mcpc, new_tvb, 0, -1, FALSE);
 			proto_item_set_text(packet_item, "MC:JE packet");
+			sub_mcpc_tree=proto_item_add_subtree(packet_item, ett_proto);
 		}else
-			packet_item=NULL;
-		subdissect_mcpc_proto(protocol_length, new_tvb, pinfo, packet_item, ctx, pinfo->fd->visited);
+			sub_mcpc_tree=NULL;
+		subdissect_mcpc_proto(protocol_length, new_tvb, pinfo, sub_mcpc_tree, ctx, pinfo->fd->visited);
 	}else{
 		varlen=VarIntToUint(dt+protocol_length_length, &varint, packet_length-readed);
 		if(varlen<0)
@@ -264,9 +260,10 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 		if(tree){
 			packet_item=proto_tree_add_item(mcpc_tree, proto_mcpc, new_tvb, 0, -1, FALSE);
 			proto_item_set_text(packet_item, "MC:JE packet");
+			sub_mcpc_tree=proto_item_add_subtree(packet_item, ett_proto);
 		}else
-			packet_item=NULL;
-		subdissect_mcpc_proto(tvb_captured_length(new_tvb), new_tvb, pinfo, packet_item, ctx, pinfo->fd->visited);
+			sub_mcpc_tree=NULL;
+		subdissect_mcpc_proto(tvb_captured_length(new_tvb), new_tvb, pinfo, sub_mcpc_tree, ctx, pinfo->fd->visited);
 	}
 
 	return tvb_captured_length(tvb);
