@@ -28,6 +28,7 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 #define PROTO_TAG_PARTIAL "MCPC partial"
 
 #include "protocol.h"
+#include "protocol_tree.h"
 #include "protocol_constants.h"
 
 

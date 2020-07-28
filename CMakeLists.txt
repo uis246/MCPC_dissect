@@ -5,4 +5,4 @@ add_compile_options(-Wall -Wextra -pedantic -fvisibility=hidden -fuse-linker-plu
 add_definitions("-DHAVE_CONFIG_H")
 include_directories("/usr/include/glib-2.0" "/usr/lib/glib-2.0/include" "/usr/lib64/glib-2.0/include" "/usr/include/wireshark")
 
-add_library(MCPC_dissect SHARED "mcpc.c" "protocol.c" "protocol_constants.c" "protocol.h" "protocol_constants.h")
+add_library(MCPC_dissect SHARED "mcpc.c" "protocol.c" "protocol_tree.c" "protocol_tree_play.c" "protocol_constants.c" "protocol.h" "protocol_tree.h" "protocol_constants.h")

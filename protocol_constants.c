@@ -132,7 +132,7 @@ cbpackettypes[]={//Clientbound packet types
 	{0x4D, "Advancements"},
 	{0x4E, "Entity Properties"},
 	{0x4F, "Entity Effect"},
-	{ 0, NULL }
+	{0, NULL}
 },
 sbpackettypes[]={//Serverbound(to server) packet types
 	{0x00, "Teleport Confirm"},
@@ -150,7 +150,7 @@ sbpackettypes[]={//Serverbound(to server) packet types
 	{0x0C, "Player"},
 	{0x0D, "Player Position"},
 	{0x0E, "Player Position And Look (serverbound)"},
-	{0x1F, "Player Look"},
+	{0x0F, "Player Look"},
 	{0x10, "Vehicle Move (serverbound)"},
 	{0x11, "Vehicle Move (serverbound)"},
 	{0x12, "Craft Recipe Request"},

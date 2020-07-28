@@ -17,17 +17,6 @@ typedef struct {
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen);
 
-void tree_server_handshake(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length);
-
-void tree_server_login(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length);
-void tree_client_login(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length);
-
-void tree_server_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length);
-void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length);
-
-void tree_server_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo _U_, const void *data, guint length);
-void tree_client_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo _U_, const void *data, guint length);
-
 int parse_server_handshake(const void *data, guint length, mcpc_protocol_context *ctx);
 
 int parse_server_login(const void *data, guint length, mcpc_protocol_context *ctx _U_);
