@@ -1,21 +1,23 @@
 extern int
-        hf_protocol_packetid_sb,
-        hf_protocol_packetid_cb,
-        hf_protocol_packetid_sb_hs,
-        hf_protocol_packetid_sb_login,
-        hf_protocol_packetid_cb_login,
-        hf_protocol_packetid_sb_slp,
-        hf_protocol_packetid_cb_slp;
+	hf_protocol_packetid_sb,
+	hf_protocol_packetid_cb,
+	hf_protocol_packetid_sb_hs,
+	hf_protocol_packetid_sb_login,
+	hf_protocol_packetid_cb_login,
+	hf_protocol_packetid_sb_slp,
+	hf_protocol_packetid_cb_slp;
 extern int
-        hf_string_length,
-        hf_player_name,
-        hf_uuid,
-        hf_compression_trxld,
-        hf_protocol_version,
-        hf_hs_next_state,
-        hf_server_address,
-        hf_entity_id,
-        hf_difficulty;
+	hf_string_length,
+	hf_player_name,
+	hf_uuid,
+	hf_compression_trxld,
+	hf_protocol_version,
+	hf_hs_next_state,
+	hf_server_address,
+	hf_entity_id,
+	hf_difficulty,
+	hf_resourcepack_state,
+	hf_channel_name;
 extern int proto_mcpc, ett_strlen;
 
 #define CUSTOM_STR_TO_TREE(format)		{varlen=VarIntToUint(data+readed, &varint, length);\

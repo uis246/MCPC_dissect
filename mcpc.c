@@ -61,7 +61,9 @@ int
 	hf_hs_next_state=-1,
 	hf_server_address=-1,
 	hf_entity_id=-1,
-	hf_difficulty=-1;
+	hf_difficulty=-1,
+	hf_resourcepack_state=-1,
+	hf_channel_name=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	int8_t i=0;
@@ -464,6 +466,22 @@ static void proto_register_mcpc(){
 				"Difficulty", "mcpc.difficulty",
 				FT_UINT8, BASE_DEC,
 				VALS(difficulty_levels), 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_resourcepack_state,
+			{
+				"Resource Pack Status", "mcpc.resourcepack.status",
+				FT_UINT8, BASE_DEC,
+				VALS(resourcepack_status), 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_channel_name,
+			{
+				"Channel name", "mcpc.channel",
+				FT_STRING, STR_ASCII,
+				NULL, 0x0,
 				NULL, HFILL
 			}
 		}

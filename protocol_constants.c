@@ -2,11 +2,20 @@
 #include "protocol_constants.h"
 
 const value_string
+resourcepack_status[]={//Statuses of ResourcePackStatus
+	{0x00, "successfully loaded"},
+	{0x01, "declined"},
+	{0x02, "failed download"},
+	{0x03, "accepted"},
+	{0, NULL}
+};
+
+const value_string
 difficulty_levels[]={//State types
-	{0x00, "Peaceful"},
-	{0x01, "Easy"},
-	{0x02, "Normal"},
-	{0x03, "Hard"},
+	{0x00, "peaceful"},
+	{0x01, "easy"},
+	{0x02, "normal"},
+	{0x03, "hard"},
 	{0, NULL}
 };
 
