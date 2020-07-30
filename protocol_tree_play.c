@@ -32,7 +32,7 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 		proto_tree_add_uint(packet_tree, hf_protocol_packetid_cb, tvb, 0, varlen, varint);
 		switch(varint){
 			case PID_CB_PLAY_JOIN_GAME:
-				proto_tree_add_int(packet_tree, hf_entity_id, tvb, readed, 4, be32toh(*(int32_t*)data+readed));
+				proto_tree_add_int(packet_tree, hf_entity_id, tvb, readed, 4, be32toh(*(int32_t*)(data+readed)));
 				readed+=4;
 				proto_item_set_text(
 					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 1, FALSE),
@@ -67,7 +67,7 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 				CUSTOM_STR_TO_TREE("Level Type: %s");
 				break;
 			case PID_CB_PLAY_SERVER_DIFFICULTY:
-				proto_tree_add_int(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)data+readed);
+				proto_tree_add_int(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)(data+readed));
 				readed+=1;
 				break;
 			case PID_CB_PLAY_RESOURCE_PACK_SEND:
