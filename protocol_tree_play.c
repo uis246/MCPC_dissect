@@ -75,13 +75,9 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 				CUSTOM_STR_TO_TREE("Hash (SHA-1): %s");
 				break;
 			case PID_CB_PLAY_CHUNK_DATA:
-				proto_item_set_text(
-					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 1, FALSE),
-					"Chunk X: %d", be32toh(*(int32_t*)(data+readed)));
+				proto_tree_add_int(packet_tree, hf_chunk_x, tvb, readed, 4, be32toh(*(int32_t*)(data+readed)));
 				readed+=4;
-				proto_item_set_text(
-					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 1, FALSE),
-					"Chunk Z: %d", be32toh(*(int32_t*)(data+readed)));
+				proto_tree_add_int(packet_tree, hf_chunk_z, tvb, readed, 4, be32toh(*(int32_t*)(data+readed)));
 				readed+=4;
 				proto_item_set_text(
 					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 1, FALSE),

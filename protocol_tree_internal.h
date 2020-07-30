@@ -17,7 +17,9 @@ extern int
 	hf_entity_id,
 	hf_difficulty,
 	hf_resourcepack_state,
-	hf_channel_name;
+	hf_channel_name,
+	hf_chunk_x,
+	hf_chunk_z;
 extern int proto_mcpc, ett_strlen;
 
 #define CUSTOM_STR_TO_TREE(format)		{varlen=VarIntToUint(data+readed, &varint, length);\

@@ -63,7 +63,9 @@ int
 	hf_entity_id=-1,
 	hf_difficulty=-1,
 	hf_resourcepack_state=-1,
-	hf_channel_name=-1;
+	hf_channel_name=-1,
+	hf_chunk_x=-1,
+	hf_chunk_z=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	int8_t i=0;
@@ -481,6 +483,22 @@ static void proto_register_mcpc(){
 			{
 				"Channel name", "mcpc.channel",
 				FT_STRING, STR_ASCII,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_chunk_x,
+			{
+				"Chunk X", "mcpc.chunk.x",
+				FT_INT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_chunk_z,
+			{
+				"Chunk Z", "mcpc.chunk.z",
+				FT_INT32, BASE_DEC,
 				NULL, 0x0,
 				NULL, HFILL
 			}
