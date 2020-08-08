@@ -19,6 +19,14 @@ void tree_server_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 			case PID_SB_PLAY_PLUGIN_MESSAGE:
 				STR_TO_TREE(hf_channel_name);
 				break;
+			case PID_SB_PLAY_POS_AND_VIEW:
+				proto_tree_add_double(packet_tree, hf_pos_x, tvb, readed, 8, (double)be64toh(*(uint64_t*)(data+readed)));
+				readed+=8;
+				proto_tree_add_double(packet_tree, hf_pos_y, tvb, readed, 8, (double)be64toh(*(uint64_t*)(data+readed)));
+				readed+=8;
+				proto_tree_add_double(packet_tree, hf_pos_z, tvb, readed, 8, (double)be64toh(*(uint64_t*)(data+readed)));
+				readed+=8;
+				break;
 		}
 	}
 }
@@ -58,7 +66,7 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 4, FALSE),
 					"Dimension: %d", be32toh(*(int32_t*)(data+readed)));
 				readed+=4;
-				proto_tree_add_int(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)data+readed);
+				proto_tree_add_uint(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)data+readed);
 				readed+=1;
 				proto_item_set_text(
 					proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed, 1, FALSE),
@@ -67,7 +75,7 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 				CUSTOM_STR_TO_TREE("Level Type: %s");
 				break;
 			case PID_CB_PLAY_SERVER_DIFFICULTY:
-				proto_tree_add_int(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)(data+readed));
+				proto_tree_add_uint(packet_tree, hf_difficulty, tvb, readed, 4, *(uint8_t*)(data+readed));
 				readed+=1;
 				break;
 			case PID_CB_PLAY_RESOURCE_PACK_SEND:

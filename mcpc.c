@@ -1,8 +1,6 @@
 //#include <stdio.h>
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include <config.h>
 
 #include <stdint.h>
 #include <stdio.h>
@@ -12,15 +10,14 @@
 #include <epan/proto_data.h>
 #include <epan/column-info.h>
 #include <epan/dissectors/packet-tcp.h>
-#include <ws_version.h>
 
 #include <epan/wmem/wmem.h>
 
 #ifndef ENABLE_STATIC
 WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.3";
 WS_DLL_PUBLIC_DEF const gchar plugin_release[] = VERSION;//e.g. "3.2"
-WS_DLL_PUBLIC_DEF const int plugin_want_major = WIRESHARK_VERSION_MAJOR;
-WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_major = VERSION_MAJOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
 #endif
 
 #define PROTO_PORT 25565
@@ -30,7 +27,7 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
 #include "protocol.h"
 #include "protocol_tree.h"
 #include "protocol_constants.h"
-
+#include "protocol_tree_internal.h"
 
 
 static int
@@ -65,10 +62,13 @@ int
 	hf_resourcepack_state=-1,
 	hf_channel_name=-1,
 	hf_chunk_x=-1,
-	hf_chunk_z=-1;
+	hf_chunk_z=-1,
+	hf_pos_x=-1,
+	hf_pos_y=-1,
+	hf_pos_z=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
-	int8_t i=0;
+	uint8_t i=0;
 	*result=0;
 	do{
 		if(i>5)
@@ -77,7 +77,7 @@ int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 			return -1;
 		*result |= (varint[i]&0x7F) << (i*7);
 	}while((varint[i++]&0x80) != 0);
-	return i;
+	return (int8_t)i;
 }
 
 static guint getlen(packet_info *pinfo, tvbuff_t *tvb, int offset, void *data _U_){
@@ -499,6 +499,30 @@ static void proto_register_mcpc(){
 			{
 				"Chunk Z", "mcpc.chunk.z",
 				FT_INT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_pos_x,
+			{
+				"X coordinate", "mcpc.coord.x",
+				FT_DOUBLE, BASE_NONE,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_pos_y,
+			{
+				"Y coordinate", "mcpc.coord.y",
+				FT_DOUBLE, BASE_NONE,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_pos_z,
+			{
+				"Z coordinate", "mcpc.coord.z",
+				FT_DOUBLE, BASE_NONE,
 				NULL, 0x0,
 				NULL, HFILL
 			}
