@@ -9,7 +9,7 @@ void tree_server_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 	int8_t varlen;
 	readed=varlen=VarIntToUint(data, &varint, length);//PacketID
 	if(varlen>0){
-		proto_item_append_text(proto_tree_get_parent(proto_tree_get_parent_tree(packet_tree)), ", PID: %u", varint);
+		proto_item_append_text(proto_tree_get_parent(proto_tree_get_parent_tree(packet_tree)), ", PID: 0x%X", varint);
 		proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb, tvb, 0, varlen, varint);
 		switch(varint){
 			case PID_SB_PLAY_RESOURCE_PACK_STAT:
@@ -36,7 +36,7 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 	int8_t varlen;
 	readed=varlen=VarIntToUint(data, &varint, length);//PacketID
 	if(varlen>0){
-		proto_item_append_text(proto_tree_get_parent(proto_tree_get_parent_tree(packet_tree)), ", PID: %u", varint);
+		proto_item_append_text(proto_tree_get_parent(proto_tree_get_parent_tree(packet_tree)), ", PID: 0x%X", varint);
 		proto_tree_add_uint(packet_tree, hf_protocol_packetid_cb, tvb, 0, varlen, varint);
 		switch(varint){
 			case PID_CB_PLAY_JOIN_GAME:
