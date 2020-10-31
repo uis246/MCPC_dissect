@@ -12,3 +12,6 @@ void tree_client_play(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo
 
 void tree_server_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo _U_, const void *data, guint length);
 void tree_client_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo _U_, const void *data, guint length);
+
+void tree_register_fields(void);
+void fill_table(void);

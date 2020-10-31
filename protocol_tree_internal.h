@@ -22,32 +22,44 @@ extern int
 	hf_chunk_z,
 	hf_pos_x,
 	hf_pos_y,
-	hf_pos_z;
-extern int proto_mcpc, ett_strlen;
+	hf_pos_z,
+	hf_metadata,
+	hf_metadata_index,
+	hf_metadata_type;
+extern int proto_mcpc, ett_strlen, ett_metadata;
 
-#define CUSTOM_STR_TO_TREE(format)		{varlen=VarIntToUint(data+readed, &varint, length);\
-                                                                                gchar *name=wmem_alloc(pinfo->pool, varint+1);\
+#define CUSTOM_STR_TO_TREE(tree, format)	varlen=VarIntToUint(data+readed, &varint, length-readed);\
+																				{gchar *name=wmem_alloc(wmem_packet_scope(), varint+1);\
                                                                                 memcpy(name, data+readed+varlen, varint);\
                                                                                 name[varint]=0x00;\
-                                                                                proto_item *ti=proto_tree_add_item(packet_tree, proto_mcpc, tvb, readed+varlen, varint, FALSE);\
-                                                                                proto_item_set_text(ti, format, name);\
+																				proto_item *string_item=proto_tree_add_item(tree, proto_mcpc, tvb, readed, varint+varlen, FALSE);\
+																				proto_item_set_text(string_item, format, name);\
                                                                                 proto_tree_add_uint(\
-                                                                                        proto_item_add_subtree(ti, ett_strlen),\
+																						proto_item_add_subtree(string_item, ett_strlen),\
                                                                                         hf_string_length, tvb, readed, varlen, varint);\
                                                                                 \
-                                                                                wmem_free(pinfo->pool, name);\
-                                                                                readed+=varlen+varint;}
+																				wmem_free(wmem_packet_scope(), name);}\
+																				readed+=varlen+varint
 
 
-#define STR_TO_TREE(to_hf) 				{varlen=VarIntToUint(data+readed, &varint, length);\
-                                                                                gchar *name=wmem_alloc(pinfo->pool, varint+1);\
-                                                                                memcpy(name, data+readed+varlen, varint);\
-                                                                                name[varint]=0x00;\
-                                                                                proto_tree_add_uint(\
-                                                                                        proto_item_add_subtree(\
-                                                                                                proto_tree_add_string(packet_tree, to_hf, tvb, readed, varint+varlen, name),\
-                                                                                                ett_strlen),\
-                                                                                        hf_string_length, tvb, readed, varlen, varint);\
-                                                                                \
-                                                                                wmem_free(pinfo->pool, name);\
-                                                                                readed+=varlen+varint;}
+#define STR_TO_TREE(tree, to_hf)			varlen=VarIntToUint(data+readed, &varint, length-readed);\
+												{gchar *name=wmem_alloc(wmem_packet_scope(), varint+1);\
+												memcpy(name, data+readed+varlen, varint);\
+												name[varint]=0x00;\
+												proto_tree_add_uint(\
+												proto_item_add_subtree(\
+													proto_tree_add_string(tree, to_hf, tvb, readed, varint+varlen, name),\
+														ett_strlen),\
+													hf_string_length, tvb, readed, varlen, varint);\
+												wmem_free(wmem_packet_scope(), name);}\
+											readed+=varlen+varint
+
+#define POS_TO_TREE(tree)					proto_tree_add_double(tree, hf_pos_x, tvb, readed, 8, (double)be64toh(*(const uint64_t*)(data+readed)));\
+											readed+=8;\
+											proto_tree_add_double(tree, hf_pos_y, tvb, readed, 8, (double)be64toh(*(const uint64_t*)(data+readed)));\
+											readed+=8;\
+											proto_tree_add_double(tree, hf_pos_z, tvb, readed, 8, (double)be64toh(*(const uint64_t*)(data+readed)));\
+											readed+=8
+
+//Skip UUID
+#define UUID_TO_TREE(tree)					readed+=16

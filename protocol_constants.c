@@ -2,6 +2,34 @@
 #include "protocol_constants.h"
 
 const value_string
+direction[]={
+	{0, "Down"},
+	{1, "Up"},
+	{2, "North"},
+	{3, "South"},
+	{4, "West"},
+	{5, "East"},
+};
+
+const value_string
+metadata_types[]={
+	{0, "Byte"},
+	{1, "VarInt"},
+	{2, "Float"},
+	{3, "String"},
+	{4, "Chat"},
+	{5, "Slot"},
+	{6, "Boolean"},
+	{7, "Rotation"},
+	{8, "Position"},
+	{9, "Optional Position"},
+	{10, "Direction (VarInt!)"},
+	{11, "Optional UUID"},
+	{12, "Optional Block ID"},
+	{13, "NBT Tag"}
+};
+
+const value_string
 resourcepack_status[]={//Statuses of ResourcePackStatus
 	{0x00, "successfully loaded"},
 	{0x01, "declined"},

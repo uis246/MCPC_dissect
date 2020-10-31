@@ -22,7 +22,6 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
 
 #define PROTO_PORT 25565
 #define PROTO_TAG "MCPC"
-#define PROTO_TAG_PARTIAL "MCPC partial"
 
 #include "protocol.h"
 #include "protocol_tree.h"
@@ -33,8 +32,7 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
 static int
 	ett_mcpc=-1,
 	ett_proto=-1;
-int
-	ett_strlen=-1;
+
 static dissector_handle_t mcpc_handle, conv_handle, ignore_handle;
 
 static int
@@ -49,23 +47,6 @@ int
 	hf_protocol_packetid_cb_login=-1,
 	hf_protocol_packetid_sb_slp=-1,
 	hf_protocol_packetid_cb_slp=-1;
-int
-	hf_string_length=-1,
-	hf_player_name=-1,
-	hf_uuid=-1,
-	hf_compression_trxld=-1,
-	hf_protocol_version=-1,
-	hf_hs_next_state=-1,
-	hf_server_address=-1,
-	hf_entity_id=-1,
-	hf_difficulty=-1,
-	hf_resourcepack_state=-1,
-	hf_channel_name=-1,
-	hf_chunk_x=-1,
-	hf_chunk_z=-1,
-	hf_pos_x=-1,
-	hf_pos_y=-1,
-	hf_pos_z=-1;
 
 int8_t VarIntToUint(const guint8 *varint, uint32_t *result, guint maxlen){
 	uint8_t i=0;
@@ -325,7 +306,7 @@ static void proto_reg_handoff_mcpc(void){//Register dissector
 	dissector_add_uint("tcp.port", PROTO_PORT, mcpc_handle);
 }
 static void proto_register_mcpc(){
-	static gint *ett[] = { &ett_mcpc, &ett_proto, &ett_strlen };
+	static gint *ett[] = { &ett_mcpc, &ett_proto };
 	static hf_register_info hf[] = {
 		{ &hf_packet_length,
 			{
@@ -398,134 +379,6 @@ static void proto_register_mcpc(){
 				VALS(cbpackettypes_slp), 0x0,
 				NULL, HFILL
 			}
-		},
-		{ &hf_string_length,
-			{
-				"String length", "mcpc.string.length",
-				FT_UINT8, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_uuid,
-			{
-				"UUID", "mcpc.player.uuid",
-				FT_STRING, STR_ASCII,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_player_name,
-			{
-				"Player name", "mcpc.player.name",
-				FT_STRING, STR_ASCII,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_compression_trxld,
-			{
-				"Compression treshold", "mcpc.trxld",
-				FT_INT32, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_protocol_version,
-			{
-				"Protocol version", "mcpc.protocol.version",
-				FT_UINT16, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_hs_next_state,
-			{
-				"Next state", "mcpc.handshake.nextstate",
-				FT_UINT16, BASE_DEC,
-				VALS(states), 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_server_address,
-			{
-				"Server address", "mcpc.address",
-				FT_STRING, STR_ASCII,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_entity_id,
-			{
-				"Entity ID", "mcpc.entity.id",
-				FT_INT32, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_difficulty,
-			{
-				"Difficulty", "mcpc.difficulty",
-				FT_UINT8, BASE_DEC,
-				VALS(difficulty_levels), 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_resourcepack_state,
-			{
-				"Resource Pack Status", "mcpc.resourcepack.status",
-				FT_UINT8, BASE_DEC,
-				VALS(resourcepack_status), 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_channel_name,
-			{
-				"Channel name", "mcpc.channel",
-				FT_STRING, STR_ASCII,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_chunk_x,
-			{
-				"Chunk X", "mcpc.chunk.x",
-				FT_INT32, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_chunk_z,
-			{
-				"Chunk Z", "mcpc.chunk.z",
-				FT_INT32, BASE_DEC,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_pos_x,
-			{
-				"X coordinate", "mcpc.coord.x",
-				FT_DOUBLE, BASE_NONE,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_pos_y,
-			{
-				"Y coordinate", "mcpc.coord.y",
-				FT_DOUBLE, BASE_NONE,
-				NULL, 0x0,
-				NULL, HFILL
-			}
-		},
-		{ &hf_pos_z,
-			{
-				"Z coordinate", "mcpc.coord.z",
-				FT_DOUBLE, BASE_NONE,
-				NULL, 0x0,
-				NULL, HFILL
-			}
 		}
 	};
 
@@ -535,6 +388,9 @@ static void proto_register_mcpc(){
 	//Register protocol fields
 	proto_register_field_array(proto_mcpc, hf, array_length(hf));
 	proto_register_subtree_array(ett, array_length(ett));
+
+	tree_register_fields();
+	fill_table();
 }
 
 
