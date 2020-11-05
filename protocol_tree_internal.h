@@ -1,11 +1,7 @@
-extern int
-	hf_protocol_packetid_sb,
-	hf_protocol_packetid_cb,
-	hf_protocol_packetid_sb_hs,
-	hf_protocol_packetid_sb_login,
-	hf_protocol_packetid_cb_login,
-	hf_protocol_packetid_sb_slp,
-	hf_protocol_packetid_cb_slp;
+#pragma once
+
+#include "mcpc.h"
+
 extern int
 	hf_string_length,
 	hf_player_name,
@@ -25,8 +21,13 @@ extern int
 	hf_pos_z,
 	hf_metadata,
 	hf_metadata_index,
-	hf_metadata_type;
-extern int proto_mcpc, ett_strlen, ett_metadata;
+	hf_metadata_type,
+	hf_size,
+	hf_primary_bit_mask,
+	hf_bits_per_block,
+	hf_section_number,
+	hf_palette,
+	hf_palette_length;
 
 #define CUSTOM_STR_TO_TREE(tree, format)	varlen=VarIntToUint(data+readed, &varint, length-readed);\
 																				{gchar *name=wmem_alloc(wmem_packet_scope(), varint+1);\
@@ -36,7 +37,7 @@ extern int proto_mcpc, ett_strlen, ett_metadata;
 																				proto_item_set_text(string_item, format, name);\
                                                                                 proto_tree_add_uint(\
 																						proto_item_add_subtree(string_item, ett_strlen),\
-                                                                                        hf_string_length, tvb, readed, varlen, varint);\
+																						hf_string_length, tvb, (gint)readed, varlen, varint);\
                                                                                 \
 																				wmem_free(wmem_packet_scope(), name);}\
 																				readed+=varlen+varint
@@ -50,7 +51,7 @@ extern int proto_mcpc, ett_strlen, ett_metadata;
 												proto_item_add_subtree(\
 													proto_tree_add_string(tree, to_hf, tvb, readed, varint+varlen, name),\
 														ett_strlen),\
-													hf_string_length, tvb, readed, varlen, varint);\
+													hf_string_length, tvb, (gint)readed, varlen, varint);\
 												wmem_free(wmem_packet_scope(), name);}\
 											readed+=varlen+varint
 

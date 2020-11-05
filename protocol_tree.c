@@ -28,7 +28,13 @@ int
 	hf_pos_z=-1,
 	hf_metadata=-1,
 	hf_metadata_index=-1,
-	hf_metadata_type=-1;
+	hf_metadata_type=-1,
+	hf_size=-1,
+	hf_primary_bit_mask=-1,
+	hf_bits_per_block=-1,
+	hf_section_number=-1,
+	hf_palette=-1,
+	hf_palette_length=-1;
 
 void tree_register_fields(void) {
 	static gint *ett[] = { &ett_strlen, &ett_metadata };
@@ -182,6 +188,54 @@ void tree_register_fields(void) {
 				"Metadata type", "mcpc.metadata.type",
 				FT_UINT32, BASE_DEC,
 				VALS(metadata_types), 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_size,
+			{
+				"Size", "mcpc.size",
+				FT_UINT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_primary_bit_mask,
+			{
+				"Primary Bit Mask", "mcpc.chunk.pbm",
+				FT_UINT32, BASE_HEX,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_bits_per_block,
+			{
+				"Bits Per Block", "mcpc.section.bpb",
+				FT_UINT8, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_section_number,
+			{
+				"Section Y", "mcpc.section.y",
+				FT_UINT32, BASE_DEC,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_palette,
+			{
+				"Palette", "mcpc.section.palette",
+				FT_NONE, BASE_NONE,
+				NULL, 0x0,
+				NULL, HFILL
+			}
+		},
+		{ &hf_palette_length,
+			{
+				"Palette", "mcpc.section.palette.length",
+				FT_UINT32, BASE_DEC,
+				NULL, 0x0,
 				NULL, HFILL
 			}
 		}

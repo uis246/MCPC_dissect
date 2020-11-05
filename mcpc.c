@@ -23,11 +23,10 @@ WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
 #define PROTO_PORT 25565
 #define PROTO_TAG "MCPC"
 
+#include "mcpc.h"
 #include "protocol.h"
 #include "protocol_tree.h"
 #include "protocol_constants.h"
-#include "protocol_tree_internal.h"
-
 
 static int
 	ett_mcpc=-1,
