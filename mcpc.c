@@ -11,7 +11,11 @@
 #include <epan/column-info.h>
 #include <epan/dissectors/packet-tcp.h>
 
+#if (VERSION_MAJOR==3 && VERSION_MINOR>=6) || VERSION_MAJOR>3
+#include <wsutil/wmem/wmem.h>
+#else
 #include <epan/wmem/wmem.h>
+#endif
 
 #ifndef ENABLE_STATIC
 WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.3";
@@ -92,7 +96,7 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 
 	if(visited){
 		if(tree){
-			if(pinfo->destport==25565){
+			if(pinfo->destport==ctx->serverPort){
 				switch (ctx->state) {
 					case STATE_PLAY:
 						tree_server_play(tree, tvb, pinfo, dat, length);
@@ -123,7 +127,7 @@ static void subdissect_mcpc_proto(guint length, tvbuff_t *tvb, packet_info *pinf
 		}
 		return;
 	}else{
-		if(pinfo->destport==25565){
+		if(pinfo->destport==ctx->serverPort){
 			switch (ctx->state) {
 				case STATE_PLAY:
 					return;
@@ -179,7 +183,7 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 	gint8 varlen;
 	col_set_str(pinfo->cinfo, COL_PROTOCOL, PROTO_TAG);//Set MCPC protocol tag
 
-	pinfo->fd->subnum++;
+	pinfo->fd->subnum++;//NOTE: Is it ok?
 
 	if(pinfo->fd->visited){
 		ctx=p_get_proto_data(wmem_file_scope(), pinfo, proto_mcpc, pinfo->fd->subnum);
@@ -188,11 +192,16 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 		conv=find_or_create_conversation(pinfo);
 		ctx=conversation_get_proto_data(conv, proto_mcpc);
 		mcpc_protocol_context *save;
+		//Here I AFAIR trying to save state, but save full contex instead with ports
 		save=wmem_alloc(wmem_file_scope(), sizeof(mcpc_protocol_context));
 		*save=*ctx;
 		p_add_proto_data(wmem_file_scope(), pinfo, proto_mcpc, pinfo->fd->subnum, save);
 	}
 
+	if(pinfo->destport == ctx->serverPort)
+		col_set_str(pinfo->cinfo, COL_INFO, "[C => S]");
+	else
+		col_set_str(pinfo->cinfo, COL_INFO, "[S => C]");
 	packet_length=tvb_reported_length(tvb);//To read
 
 	dt=tvb_get_ptr(tvb, pinfo->desegment_offset, packet_length);
@@ -251,11 +260,6 @@ static int subdissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, 
 //	return protocol_length;
 }
 static int conv_dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data){
-	if(pinfo->destport==25565)
-		col_set_str(pinfo->cinfo, COL_INFO, "[C->S]");
-	else
-		col_set_str(pinfo->cinfo, COL_INFO, "[S->C]");
-
 	pinfo->fd->subnum=0;
 	tcp_dissect_pdus(tvb, pinfo, tree, TRUE, 0,
 					 getlen, subdissect_mcpc, data);
@@ -267,9 +271,10 @@ static int dissect_mcpc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, voi
 	mcpc_protocol_context *ctx;
 	conv=find_or_create_conversation(pinfo);
 	ctx=conversation_get_proto_data(conv, proto_mcpc);
-	if(!ctx){
+	if(!ctx) {
 		ctx=wmem_alloc(wmem_file_scope(), sizeof(mcpc_protocol_context));
 		ctx->compressTrxld=-1;
+		ctx->serverPort=pinfo->destport;
 		ctx->state=STATE_HANDSHAKE;
 		conversation_add_proto_data(conv, proto_mcpc, ctx);
 		conversation_set_dissector(conv, conv_handle);

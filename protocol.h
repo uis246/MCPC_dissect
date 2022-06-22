@@ -1,3 +1,5 @@
+//Protocol parsing functions
+
 #pragma once
 #include <stdint.h>
 
@@ -12,6 +14,7 @@
 
 typedef struct {
 	int32_t compressTrxld;
+	guint32 serverPort;
 	uint_fast8_t state;
 } mcpc_protocol_context;
 
