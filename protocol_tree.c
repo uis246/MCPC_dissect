@@ -253,7 +253,7 @@ void tree_server_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo 
 		proto_tree_add_uint(packet_tree, hf_protocol_packetid_sb_slp, tvb, 0, varlen, varint);
 	}
 }
-void tree_client_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo, const void *data, guint length){
+void tree_client_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo _U_, const void *data, guint length){
 	guint readed;
 	uint32_t varint;
 	int8_t varlen;
@@ -267,14 +267,10 @@ void tree_client_slp(proto_tree *packet_tree, tvbuff_t *tvb, packet_info *pinfo,
 				proto_tree_add_uint(packet_tree, hf_string_length, tvb, readed, varlen, varint);
 				readed+=varlen;
 
-				gchar *addr=wmem_alloc(pinfo->pool, varint+1);
-				memcpy(addr, data+readed, varint);
-				addr[varint]=0x00;
-				readed+=varint;
-
 				proto_item_set_text(
-					proto_tree_add_item(packet_tree, hf_server_address, tvb, readed-varint, varint+2, FALSE),
-					"Response: %s:%hu", addr, g_ntohs(*(const uint16_t*)(data+readed)));
+					proto_tree_add_item(packet_tree, hf_server_address, tvb, readed, varint, FALSE),
+					"Response: %.*s:%hu", varint, (const char*)data+readed, g_ntohs(*(const uint16_t*)(data+readed)));
+				readed+=varint;
 				break;
 		}
 	}
