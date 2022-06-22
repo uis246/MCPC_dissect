@@ -1,6 +1,21 @@
-//#include <stdio.h>
+//If you don't have config.h just comment 4 lines
+// #include <config.h>
+//
+// |
+// v
+//
+// /*
+// #include <config.h>
+// */
+
+// Known to be problem for arch users
 
 #include <config.h>
+#ifndef HAVE_ZLIB
+#error Wireshark compiled without zlib support
+#endif
+
+#include <ws_version.h>
 
 #include <stdint.h>
 #include <stdio.h>
@@ -11,7 +26,7 @@
 #include <epan/column-info.h>
 #include <epan/dissectors/packet-tcp.h>
 
-#if (VERSION_MAJOR==3 && VERSION_MINOR>=6) || VERSION_MAJOR>3
+#if (WIRESHARK_VERSION_MAJOR==3 && WIRESHARK_VERSION_MINOR>=6) || WIRESHARK_VERSION_MAJOR>3
 #include <wsutil/wmem/wmem.h>
 #else
 #include <epan/wmem/wmem.h>
@@ -19,9 +34,9 @@
 
 #ifndef ENABLE_STATIC
 WS_DLL_PUBLIC_DEF const gchar plugin_version[] = "0.0.3";
-WS_DLL_PUBLIC_DEF const gchar plugin_release[] = VERSION;//e.g. "3.2"
-WS_DLL_PUBLIC_DEF const int plugin_want_major = VERSION_MAJOR;
-WS_DLL_PUBLIC_DEF const int plugin_want_minor = VERSION_MINOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_major = WIRESHARK_VERSION_MAJOR;
+WS_DLL_PUBLIC_DEF const int plugin_want_minor = WIRESHARK_VERSION_MINOR;
+WS_DLL_PUBLIC_DEF void plugin_register();
 #endif
 
 #define PROTO_PORT 25565
@@ -303,13 +318,13 @@ static int dissect_ignore(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, v
 }
 
 //Protocol register functions
-static void proto_reg_handoff_mcpc(void){//Register dissector
+static void proto_reg_handoff_mcpc(void) {//Register dissector
 	mcpc_handle =	create_dissector_handle(dissect_mcpc, proto_mcpc);
 	conv_handle =	create_dissector_handle(conv_dissect_mcpc, proto_mcpc);
 	ignore_handle =	create_dissector_handle(dissect_ignore, proto_mcpc);
 	dissector_add_uint("tcp.port", PROTO_PORT, mcpc_handle);
 }
-static void proto_register_mcpc(){
+static void proto_register_mcpc() {
 	static gint *ett[] = { &ett_mcpc, &ett_proto };
 	static hf_register_info hf[] = {
 		{ &hf_packet_length,
@@ -397,12 +412,11 @@ static void proto_register_mcpc(){
 	fill_table();
 }
 
-
 //Plugin register function
 #ifndef ENABLE_STATIC
-WS_DLL_PUBLIC void plugin_register(){
-	/* register the new protocol, protocol fields, and subtrees */
-	if (proto_mcpc == -1) { /* execute protocol initialization only once */
+void plugin_register(){
+	// register the new protocol, protocol fields, and subtrees
+	if (proto_mcpc == -1) { // execute protocol initialization only once
 		static proto_plugin plug;
 		plug.register_handoff=proto_reg_handoff_mcpc;
 		plug.register_protoinfo=proto_register_mcpc;
